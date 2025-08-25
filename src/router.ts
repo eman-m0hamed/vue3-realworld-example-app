@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from './pages/Home.vue'
 import { isAuthorized } from './store/user'
 
+
 export type AppRouteNames =
   | 'global-feed'
   | 'my-feed'
@@ -15,6 +16,7 @@ export type AppRouteNames =
   | 'profile'
   | 'profile-favorites'
   | 'settings'
+    | 'revision-details'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -74,6 +76,11 @@ export const routes: RouteRecordRaw[] = [
     path: '/settings',
     component: () => import('./pages/Settings.vue'),
   },
+    {
+      name: 'revision-details',
+      path: '/article/:slug/revisions/:revisionId',
+      component: () => import('./pages/RevisionDetails.vue'),
+    },
 ]
 export const router = createRouter({
   history: createWebHashHistory(),
