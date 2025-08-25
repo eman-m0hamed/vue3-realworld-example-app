@@ -89,6 +89,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { routerPush } from 'src/router'
 import { api, isFetchError } from 'src/services'
+import Swal from 'sweetalert2'
 import type { UpdateUser } from 'src/services/api'
 import { useUserStore } from 'src/store/user'
 
@@ -104,6 +105,13 @@ async function onSubmit() {
     // eslint-disable-next-line unicorn/no-array-reduce
     const filteredForm = Object.entries(form).reduce((form, [k, v]) => v === null ? form : Object.assign(form, { [k]: v }), {})
     const userData = await api.user.updateCurrentUser({ user: filteredForm }).then(res => res.data.user)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Profile updated successfully!',
+      timer: 1500,
+      showConfirmButton: false
+    })
     userStore.updateUser(userData)
     await routerPush('profile', { username: userData.username })
   }
