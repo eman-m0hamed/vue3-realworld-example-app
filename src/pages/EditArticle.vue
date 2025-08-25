@@ -77,6 +77,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from 'src/services'
+import { withSweetAlert } from 'src/utils/withSweetAlert'
 import type { Article } from 'src/services/api'
 
 interface FormState {
@@ -122,12 +123,20 @@ onMounted(async () => {
 })
 
 async function onSubmit() {
-  let article: Article
-  if (slug.value)
-    article = await api.articles.updateArticle(slug.value, { article: form }).then(res => res.data.article)
-  else
-    article = await api.articles.createArticle({ article: form }).then(res => res.data.article)
-
-  return router.push({ name: 'article', params: { slug: article.slug } })
+  let article: Article | undefined
+  if (slug.value) {
+    article = await withSweetAlert(
+      () => api.articles.updateArticle(slug.value, { article: form }).then(res => res.data.article),
+      'Article updated successfully!'
+    )
+  } else {
+    article = await withSweetAlert(
+      () => api.articles.createArticle({ article: form }).then(res => res.data.article),
+      'Article created successfully!'
+    )
+  }
+  if (article) {
+    return router.push({ name: 'article', params: { slug: article.slug } })
+  }
 }
 </script>
