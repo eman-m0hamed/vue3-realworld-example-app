@@ -55,10 +55,18 @@
     <button
       v-if="displayEditButton"
       aria-label="Delete article"
-      class="btn btn-outline-danger btn-sm"
+      class="btn btn-outline-danger btn-sm space"
       @click="onDelete"
     >
       <i class="ion-trash-a" /> Delete Article
+    </button>
+    <button
+      v-if="displayEditButton"
+      aria-label="show article Revisions"
+      class="btn btn-outline-info btn-sm space"
+      @click="showRevisions"
+    >
+      <i class="ion-eye" /> show Revisions
     </button>
   </div>
 </template>
@@ -70,6 +78,7 @@ import { useFavoriteArticle } from 'src/composable/useFavoriteArticle'
 import { useFollow } from 'src/composable/useFollowProfile'
 import { routerPush } from 'src/router'
 import { api } from 'src/services'
+import { withSweetAlert } from 'src/utils/withSweetAlert'
 import type { Article, Profile } from 'src/services/api'
 import { useUserStore } from 'src/store/user'
 
@@ -78,6 +87,7 @@ interface Props {
 }
 interface Emits {
   (e: 'update', article: Article): void
+  (e: 'showRevisions'): void
 }
 
 const props = defineProps<Props>()
@@ -95,8 +105,16 @@ const { favoriteProcessGoing, favoriteArticle } = useFavoriteArticle({
 })
 
 async function onDelete() {
-  await api.articles.deleteArticle(article.value.slug)
-  await routerPush('global-feed')
+  const deleted = await withSweetAlert(
+    () => api.articles.deleteArticle(article.value.slug),
+    'Article deleted successfully!'
+  )
+  if (deleted !== undefined) {
+    await routerPush('global-feed')
+  }
+}
+function showRevisions() {
+  emit('showRevisions')
 }
 
 const { followProcessGoing, toggleFollow } = useFollow({
