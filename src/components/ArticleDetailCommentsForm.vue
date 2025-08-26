@@ -43,6 +43,7 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProfile } from 'src/composable/useProfile'
 import { api } from 'src/services'
+import { withSweetAlert } from 'src/utils/withSweetAlert'
 import type { Comment } from 'src/services/api'
 import { useUserStore } from 'src/store/user'
 
@@ -63,10 +64,13 @@ const { profile } = useProfile({ username })
 const comment = ref('')
 
 async function submitComment() {
-  const newComment = await api.articles
-    .createArticleComment(props.articleSlug, { comment: { body: comment.value } })
-    .then(res => res.data.comment)
-  emit('addComment', newComment)
-  comment.value = ''
+  const newComment = await withSweetAlert(
+    () => api.articles.createArticleComment(props.articleSlug, { comment: { body: comment.value } }).then(res => res.data.comment),
+    'Comment posted!'
+  )
+  if (newComment) {
+    emit('addComment', newComment)
+    comment.value = ''
+  }
 }
 </script>
