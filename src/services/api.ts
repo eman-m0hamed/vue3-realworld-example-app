@@ -46,6 +46,7 @@ export interface Profile {
 }
 
 export interface Article {
+
   slug: string;
   title: string;
   description: string;
@@ -93,6 +94,31 @@ export interface GenericErrorModel {
   };
 }
 
+
+
+/**
+ * Represents a revision of an article.
+ */
+export interface ArticleRevision {
+  /** Unique identifier for the revision */
+  id: string;
+  /** The id of the article this revision belongs to */
+  articleId: number;
+  /** The title of the article at this revision */
+  title: string;
+  /** The body/content of the article at this revision */
+  body: string;
+  /** The description of the article at this revision */
+  description: string;
+  /** The list of tags at this revision */
+  tags: string[];
+  /** The date and time when this revision was created */
+  createdAt: string;
+  /** The username of the author who made this revision */
+  author: Profile;
+}
+
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -115,16 +141,22 @@ export interface FullRequestParams extends Omit<RequestInit, "body"> {
   cancelToken?: CancelToken;
 }
 
-export type RequestParams = Omit<FullRequestParams, "body" | "method" | "query" | "path">;
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
-  securityWorker?: (securityData: SecurityDataType | null) => Promise<RequestParams | void> | RequestParams | void;
+  securityWorker?: (
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+export interface HttpResponse<D extends unknown, E extends unknown = unknown>
+  extends Response {
   data: D;
   error: E;
 }
@@ -143,7 +175,8 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
-  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
+    fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: "same-origin",
@@ -162,7 +195,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected encodeQueryParam(key: string, value: any) {
     const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
+    return `${encodedKey}=${encodeURIComponent(
+      typeof value === "number" ? value : `${value}`
+    )}`;
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
@@ -176,9 +211,15 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
-    const keys = Object.keys(query).filter((key) => "undefined" !== typeof query[key]);
+    const keys = Object.keys(query).filter(
+      (key) => "undefined" !== typeof query[key]
+    );
     return keys
-      .map((key) => (Array.isArray(query[key]) ? this.addArrayQueryParam(query, key) : this.addQueryParam(query, key)))
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key)
+      )
       .join("&");
   }
 
@@ -189,8 +230,13 @@ export class HttpClient<SecurityDataType = unknown> {
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string") ? JSON.stringify(input) : input,
-    [ContentType.Text]: (input: any) => (input !== null && typeof input !== "string" ? JSON.stringify(input) : input),
+      input !== null && (typeof input === "object" || typeof input === "string")
+        ? JSON.stringify(input)
+        : input,
+    [ContentType.Text]: (input: any) =>
+      input !== null && typeof input !== "string"
+        ? JSON.stringify(input)
+        : input,
     [ContentType.FormData]: (input: any) =>
       Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
@@ -199,15 +245,18 @@ export class HttpClient<SecurityDataType = unknown> {
           property instanceof Blob
             ? property
             : typeof property === "object" && property !== null
-              ? JSON.stringify(property)
-              : `${property}`,
+            ? JSON.stringify(property)
+            : `${property}`
         );
         return formData;
       }, new FormData()),
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
-  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+  protected mergeRequestParams(
+    params1: RequestParams,
+    params2?: RequestParams
+  ): RequestParams {
     return {
       ...this.baseApiParams,
       ...params1,
@@ -220,7 +269,9 @@ export class HttpClient<SecurityDataType = unknown> {
     };
   }
 
-  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+  protected createAbortSignal = (
+    cancelToken: CancelToken
+  ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
       if (abortController) {
@@ -259,20 +310,34 @@ export class HttpClient<SecurityDataType = unknown> {
         this.securityWorker &&
         (await this.securityWorker(this.securityData))) ||
       {};
+
     const requestParams = this.mergeRequestParams(params, secureParams);
     const queryString = query && this.toQueryString(query);
     const payloadFormatter = this.contentFormatters[type || ContentType.Json];
     const responseFormat = format || requestParams.format;
 
-    return this.customFetch(`${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`, {
-      ...requestParams,
-      headers: {
-        ...(requestParams.headers || {}),
-        ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
-      },
-      signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
-      body: typeof body === "undefined" || body === null ? null : payloadFormatter(body),
-    }).then(async (response) => {
+    return this.customFetch(
+      `${baseUrl || this.baseUrl || ""}${path}${
+        queryString ? `?${queryString}` : ""
+      }`,
+      {
+        ...requestParams,
+        headers: {
+          ...(requestParams.headers || {}),
+          ...(type && type !== ContentType.FormData
+            ? { "Content-Type": type }
+            : {}),
+        },
+        signal:
+          (cancelToken
+            ? this.createAbortSignal(cancelToken)
+            : requestParams.signal) || null,
+        body:
+          typeof body === "undefined" || body === null
+            ? null
+            : payloadFormatter(body),
+      }
+    ).then(async (response) => {
       const r = response.clone() as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
@@ -312,7 +377,9 @@ export class HttpClient<SecurityDataType = unknown> {
  *
  * Conduit API documentation
  */
-export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+export class Api<
+  SecurityDataType extends unknown
+> extends HttpClient<SecurityDataType> {
   users = {
     /**
      * @description Login for existing user
@@ -326,7 +393,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         user: LoginUser;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -351,7 +418,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         user: NewUser;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -401,7 +468,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         user: UpdateUser;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -505,7 +572,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
          */
         limit?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -549,7 +616,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
          */
         limit?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -577,7 +644,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         article: NewArticle;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -626,7 +693,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         article: UpdateArticle;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -692,7 +759,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       data: {
         comment: NewComment;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -716,7 +783,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request DELETE:/articles/{slug}/comments/{id}
      * @secure
      */
-    deleteArticleComment: (slug: string, id: number, params: RequestParams = {}) =>
+    deleteArticleComment: (
+      slug: string,
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<any, GenericErrorModel>({
         path: `/articles/${slug}/comments/${id}`,
         method: "DELETE",
@@ -767,7 +838,80 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         secure: true,
         ...params,
       }),
+
+    /**
+     * Article Revision API
+     * @description Get the revisions for an article. Auth is required
+     *
+     * @tags revisions
+     * @name getArticleRevisions
+     * @summary Get revisions for an article
+     * @request GET:/articles/{slug}/revisions
+     */
+    getArticleRevisions: (slug: string, params: RequestParams = {}) =>
+      this.request<
+        {
+          data: ArticleRevision[];
+        },
+        GenericErrorModel
+      >({
+        path: `/articles/${slug}/revisions`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * @description Get the revision detials. Auth is required
+     *
+     * @tags revisions
+     * @name getArticleRevisionDetails
+     * @summary Get revision details for an article
+     * @request GET:/articles/{slug}/revisions/{id}
+     */
+    getArticleRevisionDetails: (
+      slug: string,
+      revisionId: string,
+      params: RequestParams = {}
+    ) =>
+      this.request<
+        {
+          data: ArticleRevision;
+        },
+        GenericErrorModel
+      >({
+        path: `/articles/${slug}/revisions/${revisionId}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * @description revert revision to  an article. Auth is required
+     *
+     * @tags revisions
+     * @name revertArticleToRevision
+     * @summary Get revisions for an article
+     * @request GET:/articles/{slug}/revisions/{id}
+     */
+    revertArticleToRevision: (
+      slug: string,
+      revisionId: number,
+      params: RequestParams = {}
+    ) =>
+      this.request<
+        {
+          data: Article;
+        },
+        GenericErrorModel
+      >({
+        path: `/articles/${slug}/revisions/${revisionId}/revert`,
+        method: "put",
+        secure: true,
+        ...params,
+      }),
   };
+
   tags = {
     /**
      * @description Get tags. Auth not required
