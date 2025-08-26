@@ -9,7 +9,7 @@
             </div>
             <template v-else>
               <img
-                :src="profile.image"
+                :src="profile.image || 'https://thumbs.dreamstime.com/b/default-profile-picture-icon-high-resolution-high-resolution-default-profile-picture-icon-symbolizing-no-display-picture-360167031.jpg'"
                 class="user-img"
                 :alt="profile.username"
                 @error="(e) => (e.target.src = 'https://thumbs.dreamstime.com/b/default-profile-picture-icon-high-resolution-high-resolution-default-profile-picture-icon-symbolizing-no-display-picture-360167031.jpg')"
