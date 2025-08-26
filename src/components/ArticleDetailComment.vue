@@ -16,6 +16,7 @@
           :src="comment.author.image"
           class="comment-author-img"
           :alt="comment.author.username"
+           @error="(e) => (e.target.src = 'https://thumbs.dreamstime.com/b/default-profile-picture-icon-high-resolution-high-resolution-default-profile-picture-icon-symbolizing-no-display-picture-360167031.jpg')"
         >
       </AppLink>
 
