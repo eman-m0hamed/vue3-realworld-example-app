@@ -15,61 +15,80 @@ We've gone to great lengths to adhere to the **Vue3** community styleguides & be
 
 For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
-# What works?
-
-- [x] [Vite](https://github.com/vitejs/vite)
-- [x] [Composition API](https://composition-api.vuejs.org/)
-- [x] [SFC \<script setup> sugar](https://v3.vuejs.org/api/sfc-script-setup.html)
-- [x] [Suspense](https://v3.vuejs.org/guide/component-dynamic-async.html#using-with-suspense) (Experimental)
-- [x] [Vue router](https://next.router.vuejs.org/)
-- [x] [Pinia](https://pinia.vuejs.org/) for state management
-- [x] [TypeScript](https://www.typescriptlang.org/) and [Vue tsc](https://github.com/johnsoncodehk/volar/tree/master/vue-language-tools/vue-tsc) for static analysis
-- [x] [swagger-typescript-api](https://github.com/acacode/swagger-typescript-api) for auto generate interface from swagger
-- [x] [ESLint](https://eslint.vuejs.org/) and [@mutoe/eslint-config](https://github.com/mutoe/eslint-config) for linting and styling (based on [@anthony/eslint-config](https://github.com/anthony/eslint-config))
-- [x] [Vitest](https://vitest.dev/) for unit testing
-- [x] [Testing Library](https://testing-library.com/docs/vue-testing-library/intro/) for component testing
-- [x] [Cypress](https://docs.cypress.io) for E2E testing
-- [x] [GitHub Actions](https://docs.github.com/en/actions) CI/CD
-
-> Basically, some of they are necessary features for the development of medium to large projects, and you can also use this repository as a starter.
->
 > Enjoy it! 😄
 
-# Getting started
 
-```shell script
+# Upgraded Frontend & Revision Feature
+
+## Setup & Run
+
+### Prerequisites
+- Node.js (v16+ recommended)
+- pnpm (recommended) or npm/yarn
+
+### Install dependencies
+```
 pnpm install
-
-# Development
-pnpm dev
-
-# Build dist
-pnpm build
-
-# Run unit tests
-pnpm test:unit
-pnpm test:unit:ci
-
-# Run E2E tests
-pnpm test:e2e
-pnpm test:e2e:ci
+# or
+npm install
+# or
+yarn install
 ```
 
-# Contributors
+### Start the development server
+```
+pnpm dev
+# or
+npm run dev
+# or
+yarn dev
+```
+- The app will be available at `http://localhost:5173` by default.
 
-<a href="https://github.com/mutoe/vue3-realworld-example-app/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=mutoe/vue3-realworld-example-app" />
-</a>
+### Build for production
+```
+pnpm build
+# or
+npm run build
+# or
+yarn build
+```
 
-Made with [contributors-img](https://contributors-img.web.app).
+---
 
-## Vue related implementations of the Realworld app
+## Revision Feature Documentation
 
-- [gothinkster/vue-realworld-example-app](https://github.com/gothinkster/vue-realworld-example-app) - vue2, js
-- [AlexBrohshtut/vue-ts-realworld-app](https://github.com/AlexBrohshtut/vue-ts-realworld-app) - vue2, ts, class-component
-- [devJang/nuxt-realworld](https://github.com/devJang/nuxt-realworld) - nuxt, ts, composition api
-- [levchak0910/vue3-ssr-realworld-example-app](https://github.com/levchak0910/vue3-ssr-realworld-example-app) - vue3, ssr
+### Overview
+- The frontend supports article revision history: users can view, inspect, and revert to previous revisions of any article.
+- Revision data is fetched from the backend via `/articles/:slug/revisions` and `/articles/:slug/revisions/:id` endpoints.
 
-## Sponsor
+### How it works
+1. **Viewing Revisions**
+   - On the article detail page, click the "Show Revisions" button to display a list of all revisions for the article.
+   - Each revision entry shows: title, description, author, created date, and tags.
+   - Clicking a revision navigates to a dedicated revision details page.
 
-Thanks **JetBrains** for providing IDE support!
+2. **Revision Details Page**
+   - Shows the full title, description, body, and tag list for the selected revision.
+   - If the user is authenticated, a "Revert to this Revision" button is shown.
+
+3. **Reverting to a Revision**
+   - Clicking the revert button sends a request to `/articles/:slug/revisions/:id/revert`.
+   - On success, the article is updated to match the selected revision, and the user is redirected to the updated article page.
+   - SweetAlert popups provide user feedback for success or error.
+
+### Assumptions & Design Decisions
+- **Authentication**: Only authenticated users can revert articles to previous revisions.
+- **API Contract**: The backend must support the following endpoints:
+  - `GET /articles/:slug/revisions` (list all revisions for an article)
+  - `GET /articles/:slug/revisions/:id` (get details for a specific revision)
+  - `PUT /articles/:slug/revisions/:id/revert` (revert to a specific revision)
+- **UI/UX**:
+  - Revision list and details are styled for clarity and usability.
+  - Tags and description are left-aligned; tags are displayed inline with their label.
+  - All HTTP actions show SweetAlert popups for user feedback.
+- **Routing**: The revision details page is accessible at `/article/:slug/revisions/:revisionId`.
+- **Slug Handling**: If reverting changes the article's slug, the UI will redirect to the new slug automatically.
+
+---
+
